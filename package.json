@@ -12,7 +12,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "superagent": "^7.1.1"
+    "superagent": "^9.0.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",
