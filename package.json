@@ -3,12 +3,13 @@
   "version": "2.8.1",
   "description": "Sumo Logic Javascript SDK for sending logs to a HTTP Source endpoint.",
   "main": "lib/sumoLogger.js",
+  "type": "module",
   "scripts": {
     "release": "np",
     "test": "jest --coverage",
     "lint": "eslint src/sumoLogger.js src/formatDate.js test/**/*.js",
     "fix-code": "prettier --write src/* test/*",
-    "build": "babel -d lib src",
+    "build": "babel --delete-dir-on-start -d lib src",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -18,7 +19,8 @@
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.3.3",
     "@babel/plugin-transform-object-assign": "^7.2.0",
-    "@babel/preset-env": "^7.3.1",
+    "@babel/plugin-transform-runtime": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
     "chai": "^4.2.0",
     "eslint": "^7.32.0",
     "eslint-plugin-node": "^11.1.0",
