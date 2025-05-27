@@ -4,6 +4,9 @@
   "description": "Sumo Logic Javascript SDK for sending logs to a HTTP Source endpoint.",
   "main": "lib/sumoLogger.js",
   "type": "module",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "release": "np",
     "test": "jest --coverage",
