@@ -1,5 +1,5 @@
-const superagent = require('superagent');
-const formatDate = require('./formatDate');
+import superagent from 'superagent';
+import formatDate from './formatDate.js';
 
 const DEFAULT_INTERVAL = 0;
 const DEFAULT_BATCH = 0;
@@ -334,4 +334,4 @@ class SumoLogger {
   }
 }
 
-module.exports = SumoLogger;
+export default SumoLogger;
