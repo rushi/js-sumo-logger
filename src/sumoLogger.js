@@ -1,5 +1,5 @@
 import superagent from 'superagent';
-import formatDate from './formatDate';
+import formatDate from './formatDate.js';
 
 const DEFAULT_INTERVAL = 0;
 const DEFAULT_BATCH = 0;
