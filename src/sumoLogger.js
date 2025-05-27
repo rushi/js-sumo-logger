@@ -3,7 +3,7 @@ import formatDate from './formatDate.js';
 
 const DEFAULT_INTERVAL = 0;
 const DEFAULT_BATCH = 0;
-const NOOP = () => { };
+const NOOP = () => {};
 
 function getUUID() {
   // eslint gets funny about bitwise
@@ -300,8 +300,9 @@ class SumoLogger {
         return `${item.path} ${item.value} ${Math.round(ts.getTime() / 1000)}`;
       }
       if (this.config.carbon2) {
-        return `${item.intrinsic_tags}  ${item.meta_tags} ${item.value
-          } ${Math.round(ts.getTime() / 1000)}`;
+        return `${item.intrinsic_tags}  ${item.meta_tags} ${
+          item.value
+        } ${Math.round(ts.getTime() / 1000)}`;
       }
       if (this.config.raw) {
         return item;
