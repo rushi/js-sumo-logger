@@ -13,6 +13,7 @@
     "lint": "eslint src/sumoLogger.js src/formatDate.js test/**/*.js",
     "fix-code": "prettier --write src/* test/*",
     "build": "babel --delete-dir-on-start -d lib src",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
