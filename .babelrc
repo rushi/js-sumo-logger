@@ -6,7 +6,7 @@
                 "targets": {
                     "node": "current"
                 },
-                "modules": false
+                "modules": "commonjs"
             }
         ]
     ],
@@ -15,7 +15,7 @@
         [
             "@babel/plugin-transform-runtime",
             {
-                "useESModules": true
+                "useESModules": false
             }
         ]
     ]

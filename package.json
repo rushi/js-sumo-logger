@@ -17,6 +17,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "superagent": "^9.0.2"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ jest.mock('superagent', () => {
     throwingError: new Error('Throwing...'),
     post: jest.fn().mockImplementation(() => superagentPostMock),
     set: jest.fn().mockImplementation(() => superagentPostMock),
+    agent: jest.fn().mockImplementation(() => superagentPostMock),
     send: jest.fn().mockImplementation(() => {
       if (superagentPostMock.sendRejects) {
         return Promise.reject(superagentPostMock.rejectingError);
@@ -27,8 +28,8 @@ jest.mock('superagent', () => {
 jest.spyOn(console, 'error').mockImplementation();
 
 const superagent = require('superagent');
-const SumoLogger = require('../src/sumoLogger');
-const formatDate = require('../src/formatDate');
+const SumoLogger = require('../lib/sumoLogger').default;
+const formatDate = require('../lib/formatDate').default;
 
 const onSuccessSpy = jest.fn();
 const onErrorSpy = jest.fn();
@@ -697,6 +698,132 @@ describe('sumoLogger', () => {
         value: 100,
       });
       expect(console.error).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('httpAgent', () => {
+    it('should create agents when httpAgent config is provided', () => {
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: {},
+      });
+
+      expect(logger.httpAgent).not.toBeNull();
+      expect(logger.httpsAgent).not.toBeNull();
+    });
+
+    it('should not create agents when httpAgent is not provided', () => {
+      const logger = new SumoLogger({
+        endpoint,
+      });
+
+      expect(logger.httpAgent).toBeNull();
+      expect(logger.httpsAgent).toBeNull();
+    });
+
+    it('should attach agent to superagent request when httpAgent is configured', () => {
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: {},
+      });
+
+      logger.log(message, {
+        timestamp,
+        sessionKey,
+      });
+
+      expect(superagent.agent).toHaveBeenCalledWith(logger.httpsAgent);
+    });
+
+    it('should attach http agent for http endpoints', () => {
+      const logger = new SumoLogger({
+        endpoint: 'http://example.com',
+        httpAgent: {},
+      });
+
+      logger.log(message, {
+        timestamp,
+        sessionKey,
+      });
+
+      expect(superagent.agent).toHaveBeenCalledWith(logger.httpAgent);
+    });
+
+    it('should use custom agent options', () => {
+      const customOptions = {
+        keepAlive: true,
+        maxSockets: 100,
+        maxFreeSockets: 20,
+      };
+
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: customOptions,
+      });
+
+      expect(logger.httpAgent).not.toBeNull();
+      expect(logger.httpsAgent).not.toBeNull();
+      expect(logger.httpAgent.maxSockets).toBe(100);
+      expect(logger.httpAgent.maxFreeSockets).toBe(20);
+    });
+
+    it('should merge custom options with defaults', () => {
+      const customOptions = {
+        maxSockets: 25,
+      };
+
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: customOptions,
+      });
+
+      expect(logger.httpAgent.maxSockets).toBe(25);
+      expect(logger.httpAgent.keepAlive).toBe(true); // default
+      expect(logger.httpAgent.keepAliveMsecs).toBe(1000); // default
+    });
+
+    it('should destroy agents when httpAgent is set to null via updateConfig', () => {
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: {},
+      });
+
+      expect(logger.httpAgent).not.toBeNull();
+      expect(logger.httpsAgent).not.toBeNull();
+
+      logger.updateConfig({ httpAgent: null });
+
+      expect(logger.httpAgent).toBeNull();
+      expect(logger.httpsAgent).toBeNull();
+    });
+
+    it('should create agents when httpAgent is configured via updateConfig', () => {
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+      });
+
+      expect(logger.httpAgent).toBeNull();
+      expect(logger.httpsAgent).toBeNull();
+
+      logger.updateConfig({ httpAgent: {} });
+
+      expect(logger.httpAgent).not.toBeNull();
+      expect(logger.httpsAgent).not.toBeNull();
+    });
+
+    it('should destroy agents when destroy() is called', () => {
+      const logger = new SumoLogger({
+        endpoint: 'https://example.com',
+        httpAgent: {},
+      });
+
+      expect(logger.httpAgent).not.toBeNull();
+      expect(logger.httpsAgent).not.toBeNull();
+
+      logger.destroy();
+
+      expect(logger.httpAgent).toBeNull();
+      expect(logger.httpsAgent).toBeNull();
     });
   });
 });

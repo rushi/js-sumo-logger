@@ -1,5 +1,7 @@
 import superagent from 'superagent';
 import formatDate from './formatDate.js';
+import http from 'http';
+import https from 'https';
 
 const DEFAULT_INTERVAL = 0;
 const DEFAULT_BATCH = 0;
@@ -49,6 +51,8 @@ class SumoLogger {
     this.pendingLogs = [];
     this.interval = 0;
     this.logSending = false;
+    this.httpAgent = null;
+    this.httpsAgent = null;
 
     this.setConfig(options);
     this.startLogSending();
@@ -76,7 +80,15 @@ class SumoLogger {
       graphite: newConfig.graphite || false,
       raw: newConfig.raw || false,
       carbon2: newConfig.carbon2 || false,
+      httpAgent: newConfig.httpAgent || null,
     };
+
+    // Initialize keep-alive agents if httpAgent config provided
+    if (this.config.httpAgent) {
+      this._initializeAgents(this.config.httpAgent);
+    } else {
+      this._destroyAgents();
+    }
   }
 
   updateConfig(newConfig = {}) {
@@ -98,6 +110,47 @@ class SumoLogger {
     }
     if (newConfig.sourceCategory) {
       this.config.sourceCategory = newConfig.sourceCategory;
+    }
+    if (newConfig.httpAgent !== undefined) {
+      this.config.httpAgent = newConfig.httpAgent;
+      if (this.config.httpAgent) {
+        this._initializeAgents(this.config.httpAgent);
+      } else {
+        this._destroyAgents();
+      }
+    }
+  }
+
+  _initializeAgents(agentOptions = {}) {
+    // Destroy existing agents first
+    this._destroyAgents();
+
+    // Default agent configuration with keep-alive enabled
+    const defaultOptions = {
+      keepAlive: true,
+      keepAliveMsecs: 1000,
+      maxSockets: 50,
+      maxFreeSockets: 10,
+      timeout: 60000,
+    };
+
+    // Merge user options with defaults
+    const httpOptions = Object.assign({}, defaultOptions, agentOptions);
+    const httpsOptions = Object.assign({}, defaultOptions, agentOptions);
+
+    // Create new agents with merged configuration
+    this.httpAgent = new http.Agent(httpOptions);
+    this.httpsAgent = new https.Agent(httpsOptions);
+  }
+
+  _destroyAgents() {
+    if (this.httpAgent) {
+      this.httpAgent.destroy();
+      this.httpAgent = null;
+    }
+    if (this.httpsAgent) {
+      this.httpsAgent.destroy();
+      this.httpsAgent = null;
     }
   }
 
@@ -163,9 +216,17 @@ class SumoLogger {
       }
 
       if (this.config.returnPromise && this.pendingLogs.length === 1) {
-        return superagent
+        const request = superagent
           .post(this.config.endpoint)
-          .set(headers)
+          .set(headers);
+
+        // Add keep-alive agent if configured
+        if (this.config.httpAgent) {
+          const isHttps = this.config.endpoint.startsWith('https://');
+          request.agent(isHttps ? this.httpsAgent : this.httpAgent);
+        }
+
+        return request
           .send(this.pendingLogs.join('\n'))
           .then(marshalHttpResponse)
           .then((res) => {
@@ -180,9 +241,17 @@ class SumoLogger {
       }
 
       const logsToSend = Array.from(this.pendingLogs);
-      return superagent
+      const request = superagent
         .post(this.config.endpoint)
-        .set(headers)
+        .set(headers);
+
+      // Add keep-alive agent if configured
+      if (this.config.httpAgent) {
+        const isHttps = this.config.endpoint.startsWith('https://');
+        request.agent(isHttps ? this.httpsAgent : this.httpAgent);
+      }
+
+      return request
         .send(logsToSend.join('\n'))
         .then(marshalHttpResponse)
         .then(() => {
@@ -222,6 +291,12 @@ class SumoLogger {
 
   flushLogs() {
     return this.sendLogs();
+  }
+
+  destroy() {
+    this.stopLogSending();
+    this._destroyAgents();
+    this.emptyLogQueue();
   }
 
   log(msg, optionalConfig) {
